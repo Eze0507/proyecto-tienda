@@ -13,6 +13,10 @@ services:
       - "${DB_PORT_EXTERNAL}:${DB_PORT_INTERNAL}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
   
   backend:
     build: ./backend
@@ -26,6 +30,10 @@ services:
       - ./backend:/app
     depends_on:
       - db
+    deploy:
+      resources:
+        limits:
+          memory: 512M
   
   frontend:
     build: ./frontend
@@ -40,6 +48,10 @@ services:
       - /app/node_modules
     depends_on:
       - backend
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
 volumes:
   postgres_data:
