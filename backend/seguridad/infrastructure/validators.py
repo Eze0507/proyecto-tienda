@@ -21,5 +21,5 @@ def validar_codigo_sucursal(value):
     _validar(validators.validar_codigo_sucursal, value)
 
 
-def validar_nombre_sucursal(value):
+def validar_solo_letras(value):
     _validar(validators.validar_solo_letras, value)
