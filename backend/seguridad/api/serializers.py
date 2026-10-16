@@ -20,7 +20,7 @@ class RolUsuarioSerializer(serializers.ModelSerializer):
 
 class PermisoSerializer(serializers.ModelSerializer):
     #id del modelo al que pertenece un permiso
-    modelo_id = serializers.CharField(
+    modelo_id = serializers.IntegerField(
         source="content_type_id",
         read_only=True
     )
@@ -38,6 +38,7 @@ class PermisoSerializer(serializers.ModelSerializer):
         fields = [
             "id", 
             "name", 
+            "codename",
             "modelo_id",
             "modelo",
             "app"
@@ -57,6 +58,7 @@ class RolDetalleSerializer(serializers.ModelSerializer):
         read_only=True
         )
     usuarios = RolUsuarioSerializer(
+        source="user_set",
         many=True,
         read_only=True
         )
@@ -80,9 +82,9 @@ class RolCrearSerializer(serializers.Serializer):
 class RolActualizarSerializer(serializers.Serializer):
     name = serializers.CharField(
         max_length=150,
-        requiered=False
+        required=False
     )
-    Permission_ids = serializers.ListField(
+    permission_ids = serializers.ListField(
         child=serializers.IntegerField(),
         required=False
     )
