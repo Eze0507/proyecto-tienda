@@ -41,8 +41,11 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
-    'usuario',
+    'seguridad.apps.SeguridadConfig',
+    'inventario.apps.InventarioConfig',
 ]
+
+AUTH_USER_MODEL = 'seguridad.Usuario'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
