@@ -1,8 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from seguridad.infrastructure.validators import (
-    validar_codigo_sucursal,
     validar_solo_letras,
-    validar_solo_numeros,
+    validar_codigo_sucursal,
+    validar_solo_numeros
 )
 from django.db import models
 from datetime import time
@@ -74,7 +74,7 @@ class Turno(models.Model):
 class UsuarioSucursal(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     sucursal = models.ForeignKey(Sucursal, on_delete=models.CASCADE)
-    turno = models.ForeignKey(Turno, on_delete=models.SET_NULL, )
+    turno = models.ForeignKey(Turno, null=True, on_delete=models.SET_NULL)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -83,10 +83,13 @@ class UsuarioSucursal(models.Model):
         db_table = "usuario_sucursal"
         verbose_name = "asignacion de empleado a sucursal"
         verbose_name_plural = "asignaciones de empleados a sucursales"
-        constrainst = [
+        constraints = [
             models.UniqueConstraint(
-                fields = ["usuario", "sucursale"],
+                fields = ["usuario", "sucursal"],
                 name="unique_usuario_sucursal"
             )
         ]
+
+class Bitacora(models.Model):
+    pass
 
