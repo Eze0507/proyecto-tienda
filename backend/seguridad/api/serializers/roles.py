@@ -45,11 +45,15 @@ class PermisoSerializer(serializers.ModelSerializer):
             ]
 
 class RolListaSerializer(serializers.ModelSerializer):
+    cantidad_usuarios_activos = serializers.IntegerField(
+        read_only=True
+    )
     class Meta:
         model = Group
         fields = [
             "id", 
-            "name"
+            "name",
+            "cantidad_usuarios_activos"
             ]
 
 class RolDetalleSerializer(serializers.ModelSerializer):

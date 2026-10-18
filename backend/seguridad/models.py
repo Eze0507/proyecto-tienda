@@ -1,8 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from seguridad.infrastructure.validators import (
-    validar_codigo_sucursal,
     validar_solo_letras,
-    validar_solo_numeros,
+    validar_codigo_sucursal,
+    validar_solo_numeros
 )
 from django.db import models
 from datetime import time
@@ -85,8 +85,11 @@ class UsuarioSucursal(models.Model):
         verbose_name_plural = "asignaciones de empleados a sucursales"
         constraints = [
             models.UniqueConstraint(
-                fields = ["usuario", "sucursale"],
+                fields = ["usuario", "sucursal"],
                 name="unique_usuario_sucursal"
             )
         ]
+
+class Bitacora(models.Model):
+    pass
 
