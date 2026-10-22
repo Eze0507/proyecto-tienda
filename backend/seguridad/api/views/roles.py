@@ -3,17 +3,17 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, ValidationError
-from backend.seguridad.infrastructure.repositories.roles import DjangoRolRepository
+from seguridad.infrastructure.repositories.roles import DjangoRolRepository
 from seguridad.api.permissions import TienePermiso
 from rest_framework.permissions import IsAuthenticated
 
-from backend.seguridad.api.serializers.roles import (
+from seguridad.api.serializers.roles import (
     RolListaSerializer, 
     RolDetalleSerializer,
     RolCrearSerializer,
     RolActualizarSerializer
 )
-from backend.seguridad.application.use_cases.roles import (
+from seguridad.application.use_cases.roles import (
     ListarRoles, 
     ObtenerDetalleRol, 
     CrearRol,
@@ -63,7 +63,7 @@ class RolListaView(APIView):
         try:
             rol = caso_uso.ejecutar(
                 nombre=datos["name"],
-                permission_ids=datos["permissions_ids"]
+                permission_ids=datos["permission_ids"]
             )
             
         except RolYaExiste as exc:
@@ -89,7 +89,7 @@ class RolDetalleView(APIView):
     
     permisos_por_metodo = {
         "GET": "auth.view_group",
-        "PATH": "auth.change_group",
+        "PATCH": "auth.change_group",
         "DELETE": "auth.delete_group"
     }
     
@@ -110,7 +110,7 @@ class RolDetalleView(APIView):
         serializer = RolActualizarSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        repository = DjangoRolRepository
+        repository = DjangoRolRepository()
         caso_uso = ActualizarRol(repository)
         
         try:

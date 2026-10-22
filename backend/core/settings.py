@@ -61,7 +61,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'core.urls'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:4200",
+    "http://localhost:4201",
 ]
 
 TEMPLATES = [

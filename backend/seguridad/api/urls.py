@@ -1,6 +1,6 @@
 """Rutas públicas del módulo seguridad."""
 from django.urls import path
-from backend.seguridad.api.views.roles import RolListaView, RolDetalleView
+from seguridad.api.views.roles import RolListaView, RolDetalleView
 
 
 urlpatterns = [

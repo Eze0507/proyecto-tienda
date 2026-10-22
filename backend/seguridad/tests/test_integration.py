@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
-from backend.seguridad.api.serializers.roles import RolDetalleSerializer, RolListaSerializer
+from seguridad.api.serializers.roles import RolDetalleSerializer, RolListaSerializer
 from seguridad.models import Sucursal, Usuario
 
 

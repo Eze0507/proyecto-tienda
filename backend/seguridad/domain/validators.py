@@ -22,3 +22,6 @@ def validar_solo_letras(value: str) -> None:
     nombre = value.replace(" ", "")
     if not nombre.isalpha():
         raise ErrorValidacion("Este campo solo permite caracteres alfabéticos y espacios.")
+
+def validar_nombre_sucursal(value: str) -> None:
+    validar_solo_letras(value)
