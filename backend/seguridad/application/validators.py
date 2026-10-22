@@ -1,4 +1,4 @@
-from backend.seguridad.application.ports.roles import RolRepositoryPort
+from seguridad.application.ports.roles import RolRepositoryPort
 from seguridad.domain.exceptions import (
     RolNoEncontrado,
     RolYaExiste,
@@ -20,9 +20,9 @@ def validar_permisos(
     
     ids_faltantes = set(ids_unicos) - ids_existentes
     
-    if ids_existentes is not None:
+    if ids_faltantes:
         raise PermisosNoEncontrados(
             sorted(ids_faltantes)
         )
     
-    return ids_existentes
+    return ids_unicos

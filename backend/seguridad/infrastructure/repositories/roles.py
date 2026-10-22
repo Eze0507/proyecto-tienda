@@ -1,6 +1,6 @@
 """Adaptadores de persistencia que implementan los puertos de aplicación."""
 from django.contrib.auth.models import Group, Permission
-from backend.seguridad.application.ports.roles import RolRepositoryPort
+from seguridad.application.ports.roles import RolRepositoryPort
 from django.db.models import Count, Q, Prefetch, QuerySet
 from seguridad.models import Usuario
 from django.db import transaction, IntegrityError
@@ -12,7 +12,7 @@ class DjangoRolRepository(RolRepositoryPort):
                 return (
             Group.objects.annotate(
                 cantidad_usuarios_activos=Count(
-                    "user", filter=Q(user_is_active=True)
+                    "user", filter=Q(user__is_active=True)
                 )
             ).order_by("name")
         )
@@ -20,10 +20,10 @@ class DjangoRolRepository(RolRepositoryPort):
     def obtener_detalle(self, id_rol: int) -> Group | None:
             return (
                 Group.objects.prefetch_related(
-                    "permissions_content_type",
+                    "permissions__content_type",
                     Prefetch(
                         "user_set",
-                        queryset=Usuario.objects.prefetch_related("sucursale")
+                        queryset=Usuario.objects.prefetch_related("sucursales")
                     )
                 )
                 .filter(id=id_rol)
@@ -41,7 +41,7 @@ class DjangoRolRepository(RolRepositoryPort):
     def obtener_ids_permisos_existentes(self, permission_ids: list[int]) -> set[int]:
             return set(
                 Permission.objects.filter(
-                    id_in=permission_ids
+                    id__in=permission_ids
                 ).values_list("id", flat=True)
             )
     
@@ -91,8 +91,8 @@ class DjangoRolRepository(RolRepositoryPort):
     
     def tiene_usuarios_asignados(self, id_rol):
             return Usuario.objects.filter(
-                Groups_id=id_rol
-            ).exists
+                groups__id=id_rol
+            ).exists()
     
     def eliminar_rol(self, id_rol):
             try:

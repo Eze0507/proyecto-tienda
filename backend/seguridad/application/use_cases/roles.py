@@ -1,5 +1,5 @@
 """Casos de uso que coordinan el dominio mediante los puertos."""
-from backend.seguridad.application.ports.roles import RolRepositoryPort
+from seguridad.application.ports.roles import RolRepositoryPort
 from seguridad.application.validators import validar_permisos
 from seguridad.domain.exceptions import (
     RolNoEncontrado,
