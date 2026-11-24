@@ -6,6 +6,16 @@ from rest_framework.exceptions import NotFound, ValidationError
 from seguridad.infrastructure.repositories.roles import DjangoRolRepository
 from seguridad.api.permissions import TienePermiso
 from rest_framework.permissions import IsAuthenticated
+from seguridad.api.utils.auditoria import obtener_contexto
+from seguridad.api.mixins import AuditoriaPermisoMixin
+from seguridad.application.services.auditoria import AuditoriaService
+from seguridad.infrastructure.repositories.bitacora import DjangoBitacoraRepository
+
+from seguridad.domain.enums import (
+    AccionEvento,
+    EntidadEvento,
+    TipoEvento,
+)
 
 from seguridad.api.serializers.roles import (
     RolListaSerializer, 
@@ -29,13 +39,19 @@ from seguridad.domain.exceptions import (
 )
 
 
-class RolListaView(APIView):
+class RolListaView(AuditoriaPermisoMixin ,APIView):
     
     permission_classes = [IsAuthenticated, TienePermiso]
     
     permisos_por_metodo = {
         "GET": "auth.view_group",
         "POST": "auth.add_group"
+    }
+    
+    auditoria_tipo_evento = TipoEvento.USUARIOS
+    auditoria_entidad = EntidadEvento.ROLES
+    auditoria_acciones = {
+        "POST": AccionEvento.REGISTRAR_ROL
     }
     
     def get(self, request):
@@ -58,12 +74,14 @@ class RolListaView(APIView):
         datos = serializer.validated_data
         
         repository = DjangoRolRepository()
-        caso_uso = CrearRol(repository)
+        auditoria = AuditoriaService(DjangoBitacoraRepository())
+        caso_uso = CrearRol(repository, auditoria)
         
         try:
             rol = caso_uso.ejecutar(
                 nombre=datos["name"],
-                permission_ids=datos["permission_ids"]
+                permission_ids=datos["permission_ids"],
+                contexto=obtener_contexto(request),
             )
             
         except RolYaExiste as exc:
@@ -83,7 +101,7 @@ class RolListaView(APIView):
             status=status.HTTP_201_CREATED
         )
 
-class RolDetalleView(APIView):
+class RolDetalleView(AuditoriaPermisoMixin ,APIView):
     
     permission_classes = [IsAuthenticated, TienePermiso]
     
@@ -91,6 +109,14 @@ class RolDetalleView(APIView):
         "GET": "auth.view_group",
         "PATCH": "auth.change_group",
         "DELETE": "auth.delete_group"
+    }
+    
+    auditoria_tipo_evento = TipoEvento.USUARIOS
+    auditoria_entidad = EntidadEvento.ROLES
+    auditoria_pk_kwarg = "pk"
+    auditoria_acciones = {
+        "PATCH": AccionEvento.MODIFICAR_ROL,
+        "DELETE": AccionEvento.ELIMINAR_ROL,
     }
     
     def get(self, request, pk):
@@ -111,13 +137,15 @@ class RolDetalleView(APIView):
         serializer.is_valid(raise_exception=True)
         
         repository = DjangoRolRepository()
-        caso_uso = ActualizarRol(repository)
+        auditoria = AuditoriaService(DjangoBitacoraRepository())
+        caso_uso = ActualizarRol(repository, auditoria)
         
         try:
             rol = caso_uso.ejecutar(
                 id_rol=pk,
                 nombre=serializer.validated_data.get("name"),
-                permission_ids=serializer.validated_data.get("permission_ids")
+                permission_ids=serializer.validated_data.get("permission_ids"),
+                contexto=obtener_contexto(request),
             )
         except RolNoEncontrado as exc:
             raise NotFound(str(exc)) from exc
@@ -141,10 +169,14 @@ class RolDetalleView(APIView):
     
     def delete(self, request, pk):
         repository = DjangoRolRepository()
-        caso_uso = EliminarRol(repository)
+        auditoria = AuditoriaService(DjangoBitacoraRepository())
+        caso_uso = EliminarRol(repository, auditoria)
         
         try:
-            caso_uso.ejecutar(id_rol=pk)
+            caso_uso.ejecutar(
+                id_rol=pk,
+                contexto=obtener_contexto(request),
+            )
         except RolNoEncontrado as exc:
             raise NotFound(str(exc)) from exc
         except RolConUsuariosAsignados as exc:

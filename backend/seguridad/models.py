@@ -1,3 +1,4 @@
+from unittest.util import _MAX_LENGTH
 from django.contrib.auth.models import AbstractUser
 from seguridad.infrastructure.validators import (
     validar_solo_letras,
@@ -6,6 +7,12 @@ from seguridad.infrastructure.validators import (
 )
 from django.db import models
 from datetime import time
+from seguridad.domain.enums import ResultadoEvento, OrigenEvento
+from enum import StrEnum
+import uuid
+
+def enum_a_choices(enum_cls: type[StrEnum]) -> list[tuple[str, str]]:
+    return [(item.value, item.value) for item in enum_cls]
 
 # Create your models here.
 class Usuario(AbstractUser):
@@ -91,5 +98,49 @@ class UsuarioSucursal(models.Model):
         ]
 
 class Bitacora(models.Model):
-    pass
-
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid7,
+        editable=False
+    )
+    tipo_evento = models.CharField(max_length=50)
+    accion = models.CharField(max_length=50)
+    resultado = models.CharField(max_length=50, choices=enum_a_choices(ResultadoEvento))
+    motivo = models.CharField(max_length=50, null=True, blank=True)
+    
+    usuario = models.ForeignKey(
+        Usuario, 
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="eventos_historicos"
+    )
+    usuario_nombre = models.CharField(max_length=150, null=True, blank=True)
+    sucursal = models.ForeignKey(
+        Sucursal,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="eventos_bitacora"
+    )
+    sucursal_nombre = models.CharField(max_length=150, null=True, blank=True)
+    
+    entidad = models.CharField(max_length=100)
+    registro_id = models.CharField(max_length=100, null=True)
+    origen = models.CharField(max_length=30, choices=enum_a_choices(OrigenEvento))
+    ip = models.CharField(max_length=45, null=True)
+    
+    datos_anteriores = models.JSONField(null=True, blank=True)
+    datos_nuevos = models.JSONField(null=True, blank=True)
+    
+    occurred_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = "bitacora"
+        ordering = ["-occurred_at"]
+        indexes = [
+            models.Index(fields=["entidad", "registro_id"]),
+            models.Index(fields=["-occurred_at"]),
+            models.Index(fields=["tipo_evento", "accion"]),
+        ]
