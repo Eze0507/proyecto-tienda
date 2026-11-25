@@ -1,11 +1,15 @@
 """Casos de uso que coordinan el dominio mediante los puertos."""
 from seguridad.application.ports.roles import RolRepositoryPort
+from core.application.ports.transaction import TransactionManagerPort
 from seguridad.application.validators import validar_permisos
 from seguridad.domain.exceptions import (
     RolNoEncontrado,
     RolYaExiste,
     RolConUsuariosAsignados
 )
+from seguridad.application.services.auditoria import AuditoriaService
+from seguridad.application.services.auditoria import ContextoAuditoria
+from seguridad.domain.enums import TipoEvento, AccionEvento, EntidadEvento, MotivoEvento
 
 class ListarRoles:
     def __init__(self, rol_repository: RolRepositoryPort):
@@ -29,13 +33,21 @@ class ObtenerDetalleRol:
         return rol
 
 class CrearRol:
-    def __init__(self, rol_repository: RolRepositoryPort):
+    def __init__(
+        self, 
+        rol_repository: RolRepositoryPort, 
+        auditoria: AuditoriaService, 
+        transaccion: TransactionManagerPort,
+    ):
         self.rol_repository = rol_repository
+        self.auditoria = auditoria
+        self.transaccion = transaccion
     
     def ejecutar(
         self,
         nombre: str,
-        permission_ids: list[int]
+        permission_ids: list[int] | None,
+        contexto: ContextoAuditoria | None = None
     ):
         if self.rol_repository.existe_por_nombre(nombre):
             raise RolYaExiste(
@@ -48,21 +60,42 @@ class CrearRol:
                 self.rol_repository
             )
         
-        rol = self.rol_repository.crear_con_permisos(
-            nombre=nombre,
-            permission_ids=permission_ids
-        )
+        with self.transaccion.atomic():
+            rol = self.rol_repository.crear_con_permisos(
+                nombre=nombre,
+                permission_ids=permission_ids
+            )
+
+            self.auditoria.registrar_exito(
+                tipo_evento=TipoEvento.USUARIOS,
+                accion=AccionEvento.REGISTRAR_ROL,
+                entidad=EntidadEvento.ROLES,
+                registro_id=str(rol.id),
+                datos_nuevos={
+                    "nombre": rol.name,
+                    "permission_ids": permission_ids or [],
+                },
+                contexto=contexto,
+            )
         
         return rol
 
 class ActualizarRol:
-    def __init__(self, rol_repository: RolRepositoryPort):
+    def __init__(
+        self, 
+        rol_repository: RolRepositoryPort, 
+        auditoria: AuditoriaService,
+        transaccion: TransactionManagerPort,
+    ):
         self.rol_repository = rol_repository
+        self.auditoria = auditoria
+        self.transaccion = transaccion
     
     def ejecutar(
         self, id_rol: int, 
         nombre: str | None = None, 
-        permission_ids: list[int] | None = None
+        permission_ids: list[int] | None = None,
+        contexto: ContextoAuditoria | None = None,
     ):
         rol = self.rol_repository.obtener_por_id(id_rol)
         
@@ -76,29 +109,91 @@ class ActualizarRol:
                 "Ya existe otro rol con ese nombre"
             )
         
+        nombre_anterior = rol.name
+        permisos_anteriores = sorted(
+            self.rol_repository.obtener_ids_permisos_rol(id_rol)
+        )
+        
         if permission_ids is not None:
                     permission_ids = validar_permisos(
                         permission_ids,
                         self.rol_repository
                     )
         
-        return self.rol_repository.actualizar_rol(
-            id_rol=id_rol,
-            nombre=nombre,
-            permission_ids=permission_ids
-        )
+        with self.transaccion.atomic():
+            rol_actualizado = self.rol_repository.actualizar_rol(
+                id_rol=id_rol,
+                nombre=nombre,
+                permission_ids=permission_ids
+            )
+            datos_anteriores: dict = {}
+            datos_nuevos: dict = {}
+
+            if nombre_cambio:
+                datos_anteriores["nombre"] = nombre_anterior
+                datos_nuevos["nombre"] = rol_actualizado.name
+
+            if permission_ids is not None:
+                permisos_nuevos = sorted(set(permission_ids))
+                if permisos_nuevos != permisos_anteriores:
+                    datos_anteriores["permission_ids"] = permisos_anteriores
+                    datos_nuevos["permission_ids"] = permisos_nuevos
+
+            if datos_nuevos:
+                self.auditoria.registrar_exito(
+                    tipo_evento=TipoEvento.USUARIOS,
+                    accion=AccionEvento.MODIFICAR_ROL,
+                    entidad=EntidadEvento.ROLES,
+                    registro_id=str(rol.id),
+                    datos_nuevos= datos_nuevos,
+                    datos_anteriores=datos_anteriores,
+                    contexto=contexto,
+                )
+        
+        return rol_actualizado
 
 class EliminarRol:
-    def __init__(self, rol_repository: RolRepositoryPort):
+    def __init__(
+        self, 
+        rol_repository: RolRepositoryPort, 
+        auditoria: AuditoriaService,
+        transaccion: TransactionManagerPort,
+    ):
         self.rol_repository = rol_repository
+        self.auditoria = auditoria
+        self.transaccion = transaccion
     
-    def ejecutar(self, id_rol: int):
+    def ejecutar(self, id_rol: int, contexto: ContextoAuditoria | None = None):
+        rol = self.rol_repository.obtener_por_id(id_rol)
         
         if self.rol_repository.tiene_usuarios_asignados(
             id_rol
         ):
+            self.auditoria.registrar_fallo(
+                tipo_evento=TipoEvento.USUARIOS,
+                accion=AccionEvento.ELIMINAR_ROL,
+                motivo=MotivoEvento.ROL_CON_USUARIO_ASIGNADO,
+                entidad=EntidadEvento.ROLES,
+                registro_id=str(id_rol),
+                contexto=contexto,
+            )
             raise RolConUsuariosAsignados(
                 "El rol tiene usuarios asignados"
             )
         
-        self.rol_repository.eliminar_rol(id_rol)
+        datos_anteriores = {
+            "nombre": rol.name,
+            "permission_ids": sorted(self.rol_repository.obtener_ids_permisos_rol(id_rol)),
+        }
+        
+        with self.transaccion.atomic():
+            self.rol_repository.eliminar_rol(id_rol)
+            
+            self.auditoria.registrar_exito(
+                tipo_evento=TipoEvento.USUARIOS,
+                accion=AccionEvento.ELIMINAR_ROL,
+                entidad=EntidadEvento.ROLES,
+                registro_id=str(id_rol),
+                datos_anteriores=datos_anteriores,
+                contexto=contexto
+            )

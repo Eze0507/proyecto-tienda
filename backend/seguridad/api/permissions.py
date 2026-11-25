@@ -3,7 +3,7 @@ from rest_framework.permissions import BasePermission
 
 class TienePermiso(BasePermission):
     
-    mensaje = "No tienes permiso para realizar esta operacion"
+    message = "No tienes permiso para realizar esta operacion"
     
     def has_permission(self, request, view):
         

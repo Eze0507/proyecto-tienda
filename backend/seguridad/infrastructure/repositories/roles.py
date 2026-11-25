@@ -45,6 +45,13 @@ class DjangoRolRepository(RolRepositoryPort):
                 ).values_list("id", flat=True)
             )
     
+    def obtener_ids_permisos_rol(self, id_rol: int) -> set[int]:
+            return set(
+                Permission.objects.filter(
+                    group__id=id_rol
+                ).values_list("id", flat=True)
+            )
+    
     def crear_con_permisos(self, nombre: str, permission_ids: list[int]) -> Group:
             try:
                 with transaction.atomic():
