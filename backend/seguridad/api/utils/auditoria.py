@@ -3,10 +3,10 @@ from seguridad.application.services.auditoria import ContextoAuditoria
 from seguridad.domain.enums import OrigenEvento
 
 def obtener_ip(request: Request) -> str | None:
-    x_forwarded_for = request.Meta.get("HTTP_X_FORWARDED_FOR")
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
     if x_forwarded_for:
-        return x_forwarded_for.slip(",")[0].strip() or None
-    return request.Meta.get("REMOTE_ADDR") or None
+        return x_forwarded_for.split(",")[0].strip() or None
+    return request.META.get("REMOTE_ADDR") or None
 
 #de la capa api obtenemos el id y nombre del usuario, el id y nombre de la sucursal
 #la ip del usuario y el origen del usuario en este caso es un endpoint web el origen es web

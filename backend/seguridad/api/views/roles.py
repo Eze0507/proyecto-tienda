@@ -8,8 +8,7 @@ from seguridad.api.permissions import TienePermiso
 from rest_framework.permissions import IsAuthenticated
 from seguridad.api.utils.auditoria import obtener_contexto
 from seguridad.api.mixins import AuditoriaPermisoMixin
-from seguridad.application.services.auditoria import AuditoriaService
-from seguridad.infrastructure.repositories.bitacora import DjangoBitacoraRepository
+from core.infrastructure.transaction import DjangoTransactionManager
 
 from seguridad.domain.enums import (
     AccionEvento,
@@ -74,8 +73,9 @@ class RolListaView(AuditoriaPermisoMixin ,APIView):
         datos = serializer.validated_data
         
         repository = DjangoRolRepository()
-        auditoria = AuditoriaService(DjangoBitacoraRepository())
-        caso_uso = CrearRol(repository, auditoria)
+        auditoria = self.obtener_auditoria()
+        transaccion = DjangoTransactionManager()
+        caso_uso = CrearRol(repository, auditoria, transaccion)
         
         try:
             rol = caso_uso.ejecutar(
@@ -137,8 +137,9 @@ class RolDetalleView(AuditoriaPermisoMixin ,APIView):
         serializer.is_valid(raise_exception=True)
         
         repository = DjangoRolRepository()
-        auditoria = AuditoriaService(DjangoBitacoraRepository())
-        caso_uso = ActualizarRol(repository, auditoria)
+        auditoria = self.obtener_auditoria()
+        transaccion = DjangoTransactionManager()
+        caso_uso = ActualizarRol(repository, auditoria, transaccion)
         
         try:
             rol = caso_uso.ejecutar(
@@ -169,8 +170,9 @@ class RolDetalleView(AuditoriaPermisoMixin ,APIView):
     
     def delete(self, request, pk):
         repository = DjangoRolRepository()
-        auditoria = AuditoriaService(DjangoBitacoraRepository())
-        caso_uso = EliminarRol(repository, auditoria)
+        auditoria = self.obtener_auditoria()
+        transaccion = DjangoTransactionManager()
+        caso_uso = EliminarRol(repository, auditoria, transaccion)
         
         try:
             caso_uso.ejecutar(

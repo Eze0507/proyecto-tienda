@@ -25,6 +25,13 @@ class RolRepositoryPort(ABC):
         pass
     
     @abstractmethod
+    def obtener_ids_permisos_rol(
+        self,
+        id_rol: int
+    ) -> set[int]:
+        pass
+    
+    @abstractmethod
     def crear_con_permisos(
         self,
         nombre: str,

@@ -103,10 +103,10 @@ class Bitacora(models.Model):
         default=uuid.uuid7,
         editable=False
     )
-    tipo_evento = models.CharField(max_length=50)
-    accion = models.CharField(max_length=50)
+    tipo_evento = models.CharField(max_length=100)
+    accion = models.CharField(max_length=100)
     resultado = models.CharField(max_length=50, choices=enum_a_choices(ResultadoEvento))
-    motivo = models.CharField(max_length=50, null=True, blank=True)
+    motivo = models.CharField(max_length=100, null=True, blank=True)
     
     usuario = models.ForeignKey(
         Usuario, 
@@ -126,9 +126,9 @@ class Bitacora(models.Model):
     sucursal_nombre = models.CharField(max_length=150, null=True, blank=True)
     
     entidad = models.CharField(max_length=100)
-    registro_id = models.CharField(max_length=100, null=True)
+    registro_id = models.CharField(max_length=100, null=True, blank=True)
     origen = models.CharField(max_length=30, choices=enum_a_choices(OrigenEvento))
-    ip = models.CharField(max_length=45, null=True)
+    ip = models.CharField(max_length=60, null=True)
     
     datos_anteriores = models.JSONField(null=True, blank=True)
     datos_nuevos = models.JSONField(null=True, blank=True)

@@ -12,13 +12,16 @@ from seguridad.infrastructure.repositories.bitacora import DjangoBitacoraReposit
 class AuditoriaPermisoMixin:
     auditoria_tipo_evento: TipoEvento | None = None
     auditoria_entidad: EntidadEvento | None = None
-    auditoria_acciones: dict[str, AccionEvento] = {}
+    auditoria_acciones: dict[str, AccionEvento] | None = None
     auditoria_pk_kwarg: str | None = None
+
+    def obtener_auditoria(self) -> AuditoriaService:
+        return AuditoriaService(DjangoBitacoraRepository())
 
     def permission_denied(self, request, message=None, code=None):
         # Si is_authenticated es False, falló IsAuthenticated (401), no TienePermiso (403)
         if request.user and request.user.is_authenticated:
-            accion = self.auditoria_acciones.get(request.method)
+            accion = (self.auditoria_acciones or {}).get(request.method)
             if self.auditoria_tipo_evento and self.auditoria_entidad and accion:
                 pk_val = (
                     self.kwargs.get(self.auditoria_pk_kwarg)
@@ -26,7 +29,7 @@ class AuditoriaPermisoMixin:
                     else None
                 )
 
-                auditoria = AuditoriaService(DjangoBitacoraRepository())
+                auditoria = self.obtener_auditoria()
                 auditoria.registrar_fallo(
                     tipo_evento=self.auditoria_tipo_evento,
                     accion=accion,
